@@ -1,0 +1,56 @@
+{
+  "name": "mcp-youtube-transcript",
+  "version": "0.0.1",
+  "description": "A server built on the Model Context Protocol (MCP) that enables direct downloading of YouTube video transcripts, supporting AI and video analysis workflows.",
+  "license": "MIT",
+  "author": "sinco",
+  "homepage": "https://github.com/sinco-lab/mcp-youtube-transcript",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sinco-lab/mcp-youtube-transcript.git"
+  },
+  "bugs": "https://github.com/sinco-lab/mcp-youtube-transcript/issues",
+  "keywords": [
+    "mcp",
+    "youtube",
+    "transcript",
+    "subtitles",
+    "captions",
+    "video",
+    "ai",
+    "claude",
+    "cursor",
+    "cline",
+    "modelcontextprotocol"
+  ],
+  "type": "module",
+  "access": "public",
+  "main": "dist/index.js",
+  "module": "dist/index.js",
+  "bin": {
+    "mcp-youtube-transcript": "dist/index.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18.0.0",
+    "pnpm": ">=8.0.0"
+  },
+  "scripts": {
+    "build": "tsc && shx chmod +x dist/*.js",
+    "clean": "rm -rf dist",
+    "prepublish": "pnpm run clean && pnpm run build"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.7.0",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.24",
+    "shx": "^0.3.4",
+    "typescript": "^5.6.2"
+  }
+}
