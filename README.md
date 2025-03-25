@@ -45,7 +45,7 @@ To use with Claude Desktop / Cursor / cline, add this server configuration:
   "mcpServers": {
     "youtube-transcript": {
       "command": "npx",
-      "args": ["-y", "sinco-lab/mcp-youtube-transcript"]
+      "args": ["-y", "@sinco-lab/mcp-youtube-transcript"]
     }
   }
 }
@@ -61,10 +61,10 @@ git clone https://github.com/sinco-lab/mcp-youtube-transcript.git
 cd mcp-youtube-transcript
 
 # Install dependencies
-pnpm install
+npm install
 
 # Build the project
-pnpm run build
+npm run build
 
 # use npx
 npx @modelcontextprotocol/inspector node "dist/index.js"
