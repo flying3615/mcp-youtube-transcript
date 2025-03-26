@@ -16,6 +16,7 @@ A Model Context Protocol server that enables retrieval of transcripts from YouTu
 - [Usage](#usage)
   - [Basic Configuration](#basic-configuration)
   - [Testing](#testing)
+  - [Troubleshooting and Maintenance](#troubleshooting-and-maintenance)
 - [API Reference](#api-reference)
 - [Development](#development)
 - [Contributing](#contributing)
@@ -144,6 +145,30 @@ npx @modelcontextprotocol/inspector node "dist/index.js"
 #    lang: "en" (optional)
 #    enableParagraphs: false (optional)
 ```
+
+### Troubleshooting and Maintenance
+
+#### Checking Claude Logs
+
+To monitor Claude's logs, you can use the following command:
+
+```bash
+tail -n 20 -f ~/Library/Logs/Claude/mcp*.log
+```
+
+This will display the last 20 lines of the log file and continue to show new entries as they are added.
+
+> **Note**: Claude app automatically prefixes MCP server log files with `mcp-server-`. For example, our server's logs will be written to `mcp-server-youtube-transcript.log`.
+
+#### Cleaning the `npx` Cache
+
+If you encounter issues related to the `npx` cache, you can manually clean it using:
+
+```bash
+rm -rf ~/.npm/_npx
+```
+
+This will remove the cached packages and allow you to start fresh.
 
 ## API Reference
 

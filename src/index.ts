@@ -40,7 +40,7 @@ class TranscriptServer {
   constructor() {
     this.extractor = new YouTubeTranscriptExtractor();
     this.server = new McpServer({
-      name: "mcp-youtube-transcripts",
+      name: "mcp-youtube-transcript",
       version: "0.0.1",
       description: "A server built on the Model Context Protocol (MCP) that enables direct downloading of YouTube video transcripts, supporting AI and video analysis workflows."
     });
