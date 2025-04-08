@@ -15,6 +15,10 @@ export interface TranscriptOptions {
 
 // Constants
 const USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36';
+const ADDITIONAL_HEADERS = {
+  'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+  'Accept-Language': 'en-US,en;q=0.9'
+};
 
 // Error handling
 export class YouTubeTranscriptError extends McpError {
@@ -144,6 +148,19 @@ export class YouTubeUtils {
   }
 }
 
+const MAX_RETRIES = 3;
+const RETRY_DELAY = 1000; // 1 second
+
+// Utility function for delay
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+// Rate limit error detection
+const isRateLimitError = (html: string): boolean => {
+  return html.includes('class="g-recaptcha"') || 
+         html.includes('sorry/index') ||
+         html.includes('consent.youtube.com');
+};
+
 // Main YouTube functionality
 export class YouTubeTranscriptFetcher {
   /**
@@ -165,109 +182,188 @@ export class YouTubeTranscriptFetcher {
     }
   }
 
-  /**
-   * Fetch transcript configuration from YouTube video page
-   */
-  private static async fetchTranscriptConfig(videoId: string, lang?: string): Promise<{ baseUrl: string, languageCode: string }> {
-    const response = await fetch(`https://www.youtube.com/watch?v=${videoId}`, {
-      headers: {
-        ...(lang && { 'Accept-Language': lang }),
-        'User-Agent': USER_AGENT
-      }
-    });
-
-    const html = await response.text();
-    const splittedHTML = html.split('"captions":');
-
-    if (splittedHTML.length <= 1) {
-      if (html.includes('class="g-recaptcha"')) {
-        throw new YouTubeTranscriptError('Too many requests');
-      }
-      if (!html.includes('"playabilityStatus":')) {
-        throw new YouTubeTranscriptError(`Video ${videoId} is unavailable`);
-      }
-      throw new YouTubeTranscriptError(`Transcripts are disabled for video ${videoId}`);
-    }
-
+  private static async fetchWithRetry(
+    url: string, 
+    options: RequestInit,
+    retries = MAX_RETRIES
+  ): Promise<Response> {
     try {
-      const transcriptData = JSON.parse(splittedHTML[1].split(',"videoDetails')[0].replace('\n', ''));
-      const transcripts = transcriptData?.playerCaptionsTracklistRenderer;
-
-      if (!transcripts || !('captionTracks' in transcripts)) {
-        throw new YouTubeTranscriptError(`No transcripts available for video ${videoId}`);
+      const response = await fetch(url, options);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
-
-      const tracks = transcripts.captionTracks as { languageCode: string; baseUrl: string }[];
-      if (lang && !tracks.some((track) => track.languageCode === lang)) {
-        const availableLangs = tracks.map((track) => track.languageCode);
-        throw new YouTubeTranscriptError(
-          `Language ${lang} not available for video ${videoId}. Available languages: ${availableLangs.join(', ')}`
-        );
-      }
-
-      const selectedTrack = lang
-        ? tracks.find((track) => track.languageCode === lang)
-        : tracks[0];
-
-      if (!selectedTrack) {
-        throw new YouTubeTranscriptError(`Could not find transcript track for video ${videoId}`);
-      }
-
-      return {
-        baseUrl: selectedTrack.baseUrl,
-        languageCode: selectedTrack.languageCode
-      };
+      return response;
     } catch (error) {
-      if (error instanceof YouTubeTranscriptError) {
-        throw error;
+      if (retries > 0) {
+        console.warn(`Fetch failed, retrying... (${retries} attempts left)`);
+        await delay(RETRY_DELAY);
+        return this.fetchWithRetry(url, options, retries - 1);
       }
-      throw new YouTubeTranscriptError(`Failed to parse transcript data: ${(error as Error).message}`);
+      throw error;
     }
   }
 
   /**
-   * Fetch and parse transcripts from the transcript URL
+   * Fetch transcript configuration and content from YouTube video page
    */
-  private static async fetchAndParseTranscripts(
-    url: string,
-    lang: string
-  ): Promise<Transcript[]> {
-    const response = await fetch(url, {
-      headers: {
-        ...(lang && { 'Accept-Language': lang }),
-        'User-Agent': USER_AGENT
+  private static async fetchTranscriptConfigAndContent(videoId: string, lang?: string): Promise<{ baseUrl: string, languageCode: string, transcripts: Transcript[] }> {
+    const headers = {
+      ...ADDITIONAL_HEADERS,
+      ...(lang && { 'Accept-Language': lang }),
+      'User-Agent': USER_AGENT
+    };
+
+    try {
+      const response = await this.fetchWithRetry(`https://www.youtube.com/watch?v=${videoId}`, { headers });
+      const html = await response.text();
+
+      if (isRateLimitError(html)) {
+        throw new YouTubeTranscriptError(
+          'YouTube rate limit detected. This could be due to:\n' +
+          '1. Too many requests from your IP\n' +
+          '2. YouTube requiring CAPTCHA verification\n' +
+          '3. Regional restrictions\n' +
+          'Try:\n' +
+          '- Waiting a few minutes\n' +
+          '- Using a different IP address\n' +
+          '- Using a VPN service'
+        );
       }
-    });
 
-    if (!response.ok) {
-      throw new YouTubeTranscriptError(`Failed to fetch transcript data (HTTP ${response.status})`);
+      // Debug log for development
+      if (process.env.NODE_ENV === 'development') {
+        console.debug('YouTube response length:', html.length);
+        console.debug('Contains captions:', html.includes('"captions":'));
+      }
+
+      const splittedHTML = html.split('"captions":');
+
+      if (splittedHTML.length <= 1) {
+        // Try alternative parsing method
+        const captionsMatch = html.match(/"playerCaptionsTracklistRenderer":\s*({[^}]+})/);
+        if (captionsMatch) {
+          try {
+            const captionsData = JSON.parse(captionsMatch[1]);
+            if (captionsData.captionTracks) {
+              const tracks = captionsData.captionTracks;
+              const selectedTrack = lang
+                ? tracks.find((track: any) => track.languageCode === lang)
+                : tracks[0];
+
+              if (selectedTrack) {
+                return this.fetchTranscriptContent(selectedTrack, lang);
+              }
+            }
+          } catch (e) {
+            console.error('Failed to parse alternative captions data:', e);
+          }
+        }
+
+        if (!html.includes('"playabilityStatus":')) {
+          throw new YouTubeTranscriptError(`Video ${videoId} is unavailable`);
+        }
+        throw new YouTubeTranscriptError(`Could not find transcript data for video ${videoId}. Response size: ${html.length}`);
+      }
+
+      try {
+        const transcriptData = JSON.parse(splittedHTML[1].split(',"videoDetails')[0].replace('\n', ''));
+        const transcripts = transcriptData?.playerCaptionsTracklistRenderer;
+
+        if (!transcripts || !('captionTracks' in transcripts)) {
+          throw new YouTubeTranscriptError(`No transcripts available for video ${videoId}`);
+        }
+
+        const tracks = transcripts.captionTracks as { languageCode: string; baseUrl: string }[];
+        if (lang && !tracks.some((track) => track.languageCode === lang)) {
+          const availableLangs = tracks.map((track) => track.languageCode);
+          throw new YouTubeTranscriptError(
+            `Language ${lang} not available for video ${videoId}. Available languages: ${availableLangs.join(', ')}`
+          );
+        }
+
+        const selectedTrack = lang
+          ? tracks.find((track) => track.languageCode === lang)
+          : tracks[0];
+
+        if (!selectedTrack) {
+          throw new YouTubeTranscriptError(`Could not find transcript track for video ${videoId}`);
+        }
+
+        // Fetch transcript content
+        const transcriptResponse = await this.fetchTranscriptContent(selectedTrack, lang);
+
+        return {
+          baseUrl: selectedTrack.baseUrl,
+          languageCode: selectedTrack.languageCode,
+          transcripts: transcriptResponse.transcripts.sort((a, b) => a.timestamp - b.timestamp)
+        };
+      } catch (error) {
+        if (error instanceof YouTubeTranscriptError) {
+          throw error;
+        }
+        throw new YouTubeTranscriptError(`Failed to parse transcript data: ${(error as Error).message}`);
+      }
+    } catch (error) {
+      if (error instanceof YouTubeTranscriptError) {
+        throw error;
+      }
+      throw new YouTubeTranscriptError(
+        `Failed to fetch transcript data: ${(error as Error).message}\n` +
+        'This might be due to network issues or YouTube rate limiting.'
+      );
     }
+  }
 
-    const xml = await response.text();
-    const results: Transcript[] = [];
-    
-    // Use regex to parse XML
-    const regex = /<text start="([^"]+)" dur="([^"]+)"[^>]*>([^<]*)<\/text>/g;
-    let match;
-    
-    while ((match = regex.exec(xml)) !== null) {
-      const start = parseFloat(match[1]);
-      const duration = parseFloat(match[2]);
-      const text = YouTubeUtils.decodeHTML(match[3]);
+  /**
+   * Helper method to fetch transcript content
+   */
+  private static async fetchTranscriptContent(
+    track: { languageCode: string; baseUrl: string },
+    lang?: string
+  ): Promise<{ baseUrl: string; languageCode: string; transcripts: Transcript[] }> {
+    const headers = {
+      ...ADDITIONAL_HEADERS,
+      ...(lang && { 'Accept-Language': lang }),
+      'User-Agent': USER_AGENT,
+      'Referer': 'https://www.youtube.com/',
+      'Origin': 'https://www.youtube.com'
+    };
+
+    try {
+      const response = await this.fetchWithRetry(track.baseUrl, { headers });
+      const xml = await response.text();
+      const results: Transcript[] = [];
       
-      // Only add non-empty transcripts
-      if (text.trim()) {
-        results.push({
-          text: text.trim(),
-          lang,
-          timestamp: start,     // Already in seconds
-          duration: duration    // Already in seconds
-        });
+      // Use regex to parse XML
+      const regex = /<text start="([^"]+)" dur="([^"]+)"[^>]*>([^<]*)<\/text>/g;
+      let match;
+      
+      while ((match = regex.exec(xml)) !== null) {
+        const start = parseFloat(match[1]);
+        const duration = parseFloat(match[2]);
+        const text = YouTubeUtils.decodeHTML(match[3]);
+        
+        if (text.trim()) {
+          results.push({
+            text: text.trim(),
+            lang: track.languageCode,
+            timestamp: start,
+            duration: duration
+          });
+        }
       }
-    }
 
-    // Sort by time
-    return results.sort((a, b) => a.timestamp - b.timestamp);
+      return {
+        baseUrl: track.baseUrl,
+        languageCode: track.languageCode,
+        transcripts: results.sort((a, b) => a.timestamp - b.timestamp)
+      };
+    } catch (error) {
+      throw new YouTubeTranscriptError(
+        `Failed to fetch transcript content: ${(error as Error).message}\n` +
+        'This might be due to network issues or YouTube rate limiting.'
+      );
+    }
   }
 
   /**
@@ -325,12 +421,11 @@ export class YouTubeTranscriptFetcher {
   static async fetchTranscripts(videoId: string, config?: { lang?: string }): Promise<{ transcripts: Transcript[], title: string }> {
     try {
       const identifier = this.extractVideoId(videoId);
-      const [{ baseUrl, languageCode }, title] = await Promise.all([
-        this.fetchTranscriptConfig(identifier, config?.lang),
+      const [{ transcripts }, title] = await Promise.all([
+        this.fetchTranscriptConfigAndContent(identifier, config?.lang),
         this.fetchVideoTitle(identifier)
       ]);
       
-      const transcripts = await this.fetchAndParseTranscripts(baseUrl, languageCode);
       return { transcripts, title };
     } catch (error) {
       if (error instanceof YouTubeTranscriptError || error instanceof McpError) {
