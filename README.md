@@ -138,7 +138,7 @@ npm run build
 # Launch inspector
 npx @modelcontextprotocol/inspector node "dist/index.js"
 
-# Access http://localhost:5173 and try these commands:
+# Access http://localhost:6274 and try these commands:
 # 1. List Tools: clink `List Tools`
 # 2. Test get_transcripts with:
 #    url: "https://www.youtube.com/watch?v=AJpK3YTTKZ4"
