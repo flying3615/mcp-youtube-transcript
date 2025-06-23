@@ -32,7 +32,8 @@
   "main": "dist/index.js",
   "module": "dist/index.js",
   "bin": {
-    "mcp-youtube-transcript": "dist/index.js"
+    "mcp-youtube-transcript": "dist/index.js",
+    "youtube-transcript": "dist/cli.js"
   },
   "files": [
     "dist",
@@ -45,6 +46,10 @@
   "scripts": {
     "build": "tsc && chmod +x dist/*.js",
     "clean": "rm -rf dist",
+    "cli": "pnpm build && node dist/cli.js",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:ui": "vitest --ui",
     "prepublishOnly": "npm run clean && npm run build",
     "release:patch": "npm version patch && git push origin v$(node -p \"require('./package.json').version\")",
     "release:minor": "npm version minor && git push origin v$(node -p \"require('./package.json').version\")",
@@ -52,10 +57,14 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.7.0",
+    "commander": "^14.0.0",
+    "youtubei.js": "^14.0.0",
     "zod": "^3.24.2"
   },
   "devDependencies": {
     "@types/node": "^20.11.24",
-    "typescript": "^5.6.2"
+    "@vitest/ui": "^3.2.4",
+    "typescript": "^5.6.2",
+    "vitest": "^3.2.4"
   }
 }
