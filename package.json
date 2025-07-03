@@ -51,9 +51,9 @@
     "test:watch": "vitest",
     "test:ui": "vitest --ui",
     "prepublishOnly": "npm run clean && npm run build",
-    "release:patch": "npm version patch && git push origin v$(node -p \"require('./package.json').version\")",
-    "release:minor": "npm version minor && git push origin v$(node -p \"require('./package.json').version\")",
-    "release:major": "npm version major && git push origin v$(node -p \"require('./package.json').version\")"
+    "release:patch": "npm version patch",
+    "release:minor": "npm version minor",
+    "release:major": "npm version major"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.7.0",
