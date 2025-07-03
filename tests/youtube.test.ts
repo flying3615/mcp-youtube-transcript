@@ -1,9 +1,7 @@
-import { describe, it, expect, beforeAll } from "vitest";
-import {
-  YouTubeTranscriptFetcher,
-  YouTubeUtils,
-  YouTubeTranscriptError,
-} from "../src/youtube.js";
+import { describe, it, expect } from "vitest";
+// @ts-ignore
+import {YouTubeTranscriptError, YouTubeTranscriptFetcher, YouTubeUtils} from "../src/youtube";
+
 
 describe("YouTubeTranscriptFetcher", () => {
   describe("extractVideoId", () => {
@@ -115,7 +113,7 @@ describe("YouTubeTranscriptFetcher", () => {
       }
 
       // Validate that all transcripts have positive duration
-      result.transcripts.forEach((transcript) => {
+      result.transcripts.forEach((transcript: { duration: any; timestamp: any; }) => {
         expect(transcript.duration).toBeGreaterThanOrEqual(0);
         expect(transcript.timestamp).toBeGreaterThanOrEqual(0);
       });

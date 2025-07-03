@@ -44,13 +44,12 @@
     "node": ">=18.0.0"
   },
   "scripts": {
-    "build": "tsc",
-    "clean": "rimraf dist",
+    "build": "rimraf dist && tsc",
     "cli": "pnpm build && node dist/cli.js",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:ui": "vitest --ui",
-    "prepublishOnly": "npm run clean && npm run build",
+    "prepublishOnly": "npm run build",
     "release:patch": "npm version patch && npm publish --access public",
     "release:minor": "npm version minor && npm publish --access public",
     "release:major": "npm version major && npm publish --access public"

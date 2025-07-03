@@ -3,7 +3,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { McpError } from "@modelcontextprotocol/sdk/types.js";
-import { YouTubeTranscriptFetcher, YouTubeUtils, YouTubeTranscriptError, TranscriptOptions, Transcript } from './youtube.js';
+import { YouTubeTranscriptFetcher, YouTubeUtils, YouTubeTranscriptError, TranscriptOptions, Transcript } from './youtube/index.js';
 import { z } from "zod";
 
 class YouTubeTranscriptExtractor {
@@ -62,7 +62,7 @@ class TranscriptServer {
       `Extract and process transcripts from a YouTube video.\n\n**Parameters:**\n- \`url\` (string, required): YouTube video URL or ID.\n- \`lang\` (string, optional, default 'en'): Language code for transcripts (e.g. 'en', 'uk', 'ja', 'ru', 'zh').\n- \`enableParagraphs\` (boolean, optional, default false): Enable automatic paragraph breaks.\n\n**IMPORTANT:** If the user does *not* specify a language *code*, **DO NOT** include the \`lang\` parameter in the tool call. Do not guess the language or use parts of the user query as the language code.`,
       {
         url: z.string().describe("YouTube video URL or ID"),
-        lang: z.string().default("en").describe("Language code for transcripts, default 'en' (e.g. 'en', 'uk', 'ja', 'ru', 'zh')"),
+        lang: z.string().default("en").describe("Language code for transcripts, default 'en' (e.g. 'en', 'zh', 'ja', 'ru')"),
         enableParagraphs: z.boolean().default(false).describe("Enable automatic paragraph breaks, default `false`")
       },
       async (input) => {

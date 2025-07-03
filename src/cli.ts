@@ -5,7 +5,7 @@ import {
   YouTubeTranscriptFetcher,
   YouTubeUtils,
   YouTubeTranscriptError,
-} from "./youtube.js";
+} from "./youtube/index.js";
 import fs from "fs";
 import path from "path";
 

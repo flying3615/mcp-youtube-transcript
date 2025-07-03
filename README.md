@@ -196,7 +196,7 @@ Fetches transcripts from YouTube videos.
 ```
 ├── src/
 │ ├── index.ts            # Server entry point
-│ ├── youtube.ts          # YouTube transcript fetching logic
+│ ├── index.ts          # YouTube transcript fetching logic
 ├── dist/                 # Compiled output
 └── package.json
 ```
