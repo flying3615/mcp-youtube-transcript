@@ -126,9 +126,7 @@ export class YouTubeTranscriptFetcher {
 
         if (matchingLang) {
           try {
-            finalTranscriptInfo = await transcriptInfo.selectLanguage(
-              config.lang
-            );
+            finalTranscriptInfo = await transcriptInfo.selectLanguage(matchingLang);
           } catch (error) {
             console.warn(
               `Could not select language ${config.lang}, using default: ${transcriptInfo.selectedLanguage}`

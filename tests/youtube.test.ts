@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 // @ts-ignore
-import {YouTubeTranscriptError, YouTubeTranscriptFetcher, YouTubeUtils} from "../src/youtube";
+import {Transcript, YouTubeTranscriptError, YouTubeTranscriptFetcher, YouTubeUtils} from "../src/youtube";
 
 
 describe("YouTubeTranscriptFetcher", () => {
@@ -88,6 +88,17 @@ describe("YouTubeTranscriptFetcher", () => {
 
       expect(result).toBeDefined();
       expect(result.transcripts.length).toBeGreaterThan(0);
+    }, 30000);
+
+    it("should fetch transcripts with URL input with different lang", async () => {
+      const videoUrl = "https://www.youtube.com/watch?v=2G165Af5KAU";
+      const lang = "chinese"
+
+      const result = await YouTubeTranscriptFetcher.fetchTranscripts(videoUrl,{ lang });
+
+      expect(result).toBeDefined();
+      expect(result.transcripts.length).toBeGreaterThan(0);
+      expect(result.transcripts.some((t: Transcript) => t.lang.toLowerCase().includes(lang))).toBe(true);
     }, 30000);
 
     it("should handle videos without transcripts gracefully", async () => {

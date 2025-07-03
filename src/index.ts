@@ -59,7 +59,7 @@ class TranscriptServer {
   private setupTools(): void {
     this.server.tool(
       "get_transcripts",
-      `Extract and process transcripts from a YouTube video.\n\n**Parameters:**\n- \`url\` (string, required): YouTube video URL or ID.\n- \`lang\` (string, optional, default 'en'): Language code for transcripts (e.g. 'en', 'uk', 'ja', 'ru', 'zh').\n- \`enableParagraphs\` (boolean, optional, default false): Enable automatic paragraph breaks.\n\n**IMPORTANT:** If the user does *not* specify a language *code*, **DO NOT** include the \`lang\` parameter in the tool call. Do not guess the language or use parts of the user query as the language code.`,
+      `Extract and process transcripts from a YouTube video.\n\n**Parameters:**\n- \`url\` (string, required): YouTube video URL or ID.\n- \`lang\` (string, optional, default 'en'): Language code for transcripts (e.g. 'en', 'ja', 'ru', 'zh').\n- \`enableParagraphs\` (boolean, optional, default false): Enable automatic paragraph breaks.\n\n**IMPORTANT:** If the user does *not* specify a language *code*, **DO NOT** include the \`lang\` parameter in the tool call. Do not guess the language or use parts of the user query as the language code, if user specify the language, use the language code instead.`,
       {
         url: z.string().describe("YouTube video URL or ID"),
         lang: z.string().default("en").describe("Language code for transcripts, default 'en' (e.g. 'en', 'zh', 'ja', 'ru')"),
@@ -69,10 +69,24 @@ class TranscriptServer {
         try {
           const videoId = this.extractor.extractYoutubeId(input.url);
           console.error(`Processing transcripts for video: ${videoId}`);
+
+          const languageMap: Record<string, string> = {
+            "en": "English",
+            "ja": "Japanese",
+            "ru": "Russian",
+            "zh": "Chinese",
+            "kr": "Korean",
+            "fr": "French",
+            "ge": "German",
+          }
+
+          if(!languageMap[input.lang]) {
+            throw new YouTubeTranscriptError(`Unsupported language code: ${input.lang}. Supported codes are: ${Object.keys(languageMap).join(", ")}`);
+          }
           
           const { transcripts, title } = await this.extractor.getTranscripts({ 
             videoID: videoId, 
-            lang: input.lang 
+            lang: languageMap[input.lang]
           });
           
           // Format text with optional paragraph breaks
