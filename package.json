@@ -44,7 +44,7 @@
     "node": ">=18.0.0"
   },
   "scripts": {
-    "build": "tsc && chmod +x dist/*.js",
+    "build": "tsc",
     "clean": "rimraf dist",
     "cli": "pnpm build && node dist/cli.js",
     "test": "vitest run",
