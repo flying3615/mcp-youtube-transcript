@@ -1,6 +1,6 @@
 {
   "name": "@gabriel3615/mcp-youtube-transcript",
-  "version": "0.0.12",
+  "version": "0.0.13",
   "description": "A server built on the Model Context Protocol (MCP) that enables direct downloading of YouTube video transcripts, supporting AI and video analysis workflows.",
   "license": "MIT",
   "author": "sinco",
