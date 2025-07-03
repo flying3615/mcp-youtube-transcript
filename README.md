@@ -1,12 +1,7 @@
 # MCP YouTube Transcript Server
 
-[![smithery badge](https://smithery.ai/badge/@sinco-lab/mcp-youtube-transcript)](https://smithery.ai/server/@sinco-lab/mcp-youtube-transcript)
-
 A Model Context Protocol server that enables retrieval of transcripts from YouTube videos. This server provides direct access to video transcripts through a simple interface, making it ideal for content analysis and processing.
 
-<a href="https://glama.ai/mcp/servers/@sinco-lab/mcp-youtube-transcript">
-  <img width="380" height="200" src="https://glama.ai/mcp/servers/@sinco-lab/mcp-youtube-transcript/badge" alt="mcp-youtube-transcript" />
-</a>
 
 ## Table of Contents
 - [Features](#features)
@@ -59,7 +54,7 @@ We provide two installation methods:
       "command": "npx",
       "args": [
         "-y",
-        "@sinco-lab/mcp-youtube-transcript"
+        "@gabriel3615/mcp-youtube-transcript"
       ]
     }
   }
@@ -80,22 +75,14 @@ cat > ~/Library/Application\ Support/Claude/claude_desktop_config.json << 'EOL'
       "command": "npx",
       "args": [
         "-y",
-        "@sinco-lab/mcp-youtube-transcript"
+        "@gabriel3615/mcp-youtube-transcript"
       ]
     }
   }
 }
 EOL
+
 ```
-
-#### Option 2: Via Smithery (Development Only)
-
-```bash
-npx -y @smithery/cli install @sinco-lab/mcp-youtube-transcript --client claude
-```
-
-⚠️ **Note**: This method is not recommended for production use as it relies on Smithery's proxy services.
-
 ## Usage
 
 ### Basic Configuration
@@ -107,7 +94,7 @@ To use with Claude Desktop / Cursor / cline, ensure your configuration matches:
   "mcpServers": {
     "youtube-transcript": {
       "command": "npx",
-      "args": ["-y", "@sinco-lab/mcp-youtube-transcript"]
+      "args": ["-y", "@gabriel3615/mcp-youtube-transcript"]
     }
   }
 }
@@ -130,7 +117,7 @@ Example output:
 
 ```bash
 # Clone and setup
-git clone https://github.com/sinco-lab/mcp-youtube-transcript.git
+git clone https://github.com/flying3615/mcp-youtube-transcript.git
 cd mcp-youtube-transcript
 npm install
 npm run build
@@ -139,9 +126,10 @@ npm run build
 npx @modelcontextprotocol/inspector node "dist/index.js"
 
 # Access http://localhost:6274 and try these commands:
-# 1. List Tools: clink `List Tools`
-# 2. Test get_transcripts with:
-#    url: "https://www.youtube.com/watch?v=AJpK3YTTKZ4"
+# 1. Paste the session id to pass authentication
+# 2. List Tools: clink `List Tools`
+# 3. Test get_transcripts with:
+#    url: "https://www.youtube.com/watch?v=LCEmiRjPEtQ"
 #    lang: "en" (optional)
 #    enableParagraphs: false (optional)
 ```

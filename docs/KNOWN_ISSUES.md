@@ -34,7 +34,7 @@ When using nvm (Node Version Manager) with multiple Node.js versions installed, 
   "mcpServers": {
     "youtube-transcript": {
       "command": "npx",
-      "args": ["-y", "@sinco-lab/mcp-youtube-transcript"],
+      "args": ["-y", "@gabriel3615/mcp-youtube-transcript"],
       "env": {
         "PATH": "/Users/username/.nvm/versions/node/v18.x.x/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
       }
