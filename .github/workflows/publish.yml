@@ -21,7 +21,7 @@ jobs:
           scope: '@gabriel3615'
       - run: pnpm install --frozen-lockfile
       - run: pnpm run build
-      - run: pnpm publish
+      - run: pnpm publish --no-git-checks
         env:
           NODE_AUTH_TOKEN: ${{ github.token }}
 
@@ -37,6 +37,6 @@ jobs:
           scope: '@gabriel3615'
       - run: pnpm install --frozen-lockfile
       - run: pnpm run build
-      - run: pnpm publish
+      - run: pnpm publish --no-git-checks
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }} 
