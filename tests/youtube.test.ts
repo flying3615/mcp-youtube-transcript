@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import * as fs from 'fs';
 // @ts-ignore
-import {YouTubeTranscriptError, YouTubeTranscriptFetcher, YouTubeUtils} from "../src/youtube";
+import {YouTubeHelperError, YouTubeTranscriptFetcher, YouTubeUtils} from "../src/youtube";
 
 
 describe("YouTubeTranscriptFetcher", () => {
@@ -225,7 +225,7 @@ describe("YouTubeUtils", () => {
 
 describe("Error Handling", () => {
   it("should create YouTubeTranscriptError correctly", () => {
-    const error = new YouTubeTranscriptError("Test error message");
+    const error = new YouTubeHelperError("Test error message");
     expect(error.name).toBe("YouTubeTranscriptError");
     expect(error.message).toContain("Test error message");
     expect(error).toBeInstanceOf(Error);
@@ -246,7 +246,7 @@ describe("download", () => {
       
       // Download the video
       await YouTubeTranscriptFetcher.download(videoId, {
-        output: outputPath,
+        outputPath: outputPath,
         quality: "lowest", // Use lowest quality for faster test
       });
       
@@ -272,7 +272,7 @@ describe("download", () => {
     
     await expect(
       YouTubeTranscriptFetcher.download(invalidVideoId, {
-        output: outputPath,
+        outputPath: outputPath,
       })
     ).rejects.toThrow();
     
@@ -292,7 +292,7 @@ describe("download", () => {
       
       // Download the video
       await YouTubeTranscriptFetcher.download(videoUrl, {
-        output: outputPath,
+        outputPath: outputPath,
         quality: "lowest", // Use lowest quality for faster test
       });
       

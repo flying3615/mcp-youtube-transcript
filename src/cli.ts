@@ -4,7 +4,7 @@ import { Command } from "commander";
 import {
   YouTubeTranscriptFetcher,
   YouTubeUtils,
-  YouTubeTranscriptError,
+  YouTubeHelperError,
 } from "./youtube/index.js";
 import fs from "fs";
 import path from "path";
@@ -56,7 +56,7 @@ program
           });
 
         if (transcripts.length === 0) {
-          throw new YouTubeTranscriptError(
+          throw new YouTubeHelperError(
             "No transcripts found for this video"
           );
         }
@@ -108,7 +108,7 @@ program
           `🎉 Successfully extracted transcript (${output.length} characters)`
         );
       } catch (error) {
-        if (error instanceof YouTubeTranscriptError) {
+        if (error instanceof YouTubeHelperError) {
           console.error(`❌ Error: ${error.message}`);
         } else {
           console.error(`❌ Unexpected error: ${(error as Error).message}`);
@@ -125,7 +125,7 @@ program
   .option(
     "-o, --output <file>",
     "Output file path (required)",
-    "video.mp4"
+    "./"
   )
   .action(
     async (
@@ -152,7 +152,7 @@ program
         console.error(`💾 Video saved to: ${outputPath}`);
         console.error(`🎉 Successfully downloaded video`);
       } catch (error) {
-        if (error instanceof YouTubeTranscriptError) {
+        if (error instanceof YouTubeHelperError) {
           console.error(`❌ Error: ${error.message}`);
         } else {
           console.error(`❌ Unexpected error: ${(error as Error).message}`);
