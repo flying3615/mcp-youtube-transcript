@@ -1,9 +1,9 @@
-import { McpError, ErrorCode } from "@modelcontextprotocol/sdk/types.js";
-import {Innertube, Utils} from "youtubei.js";
-import { Transcript } from "./types.js";
-import { YouTubeTranscriptError } from "./error.js";
+import {ErrorCode, McpError} from "@modelcontextprotocol/sdk/types.js";
+import {ClientType, Innertube, Log, Utils} from "youtubei.js";
+import {Transcript} from "./types.js";
+import {YouTubeTranscriptError} from "./error.js";
 import fs from "fs";
-import { Log } from 'youtubei.js';
+
 Log.setLevel(Log.Level.INFO);
 
 export class YouTubeTranscriptFetcher {
@@ -104,17 +104,16 @@ export class YouTubeTranscriptFetcher {
         output: string
       }
   ): Promise<void> {
-    const defaultClient = 'ANDROID';
 
     try {
       const identifier = this.extractVideoId(videoId);
       const youtube = await this.initializeYouTube();
 
-      const info = await youtube.getInfo(identifier, defaultClient);
+      const info = await youtube.getInfo(identifier, ClientType.ANDROID);
 
       const stream = await info.download({
         quality: 'best',
-        client: defaultClient,
+        client: ClientType.ANDROID
       });
 
       const file = fs.createWriteStream(options.output);
