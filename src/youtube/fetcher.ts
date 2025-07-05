@@ -1,7 +1,10 @@
 import { McpError, ErrorCode } from "@modelcontextprotocol/sdk/types.js";
-import { Innertube } from "youtubei.js";
+import {Innertube, Utils} from "youtubei.js";
 import { Transcript } from "./types.js";
 import { YouTubeTranscriptError } from "./error.js";
+import fs from "fs";
+import { Log } from 'youtubei.js';
+Log.setLevel(Log.Level.INFO);
 
 export class YouTubeTranscriptFetcher {
   private static youtube: Innertube | null = null;
@@ -90,6 +93,42 @@ export class YouTubeTranscriptFetcher {
       }
     }
     return [];
+  }
+
+  /**
+   * Download a YouTube video
+   */
+  static async download(
+      videoId: string,
+      options: {
+        output: string
+      }
+  ): Promise<void> {
+    const defaultClient = 'ANDROID';
+
+    try {
+      const identifier = this.extractVideoId(videoId);
+      const youtube = await this.initializeYouTube();
+
+      const info = await youtube.getInfo(identifier, defaultClient);
+
+      const stream = await info.download({
+        quality: 'best',
+        client: defaultClient,
+      });
+
+      const file = fs.createWriteStream(options.output);
+      for await (const chunk of Utils.streamToIterable(stream)) {
+        file.write(chunk);
+      }
+
+      file.end();
+
+    } catch (error) {
+      throw new YouTubeTranscriptError(
+          `Failed to download video: ${(error as Error).message}`
+      );
+    }
   }
 
   /**

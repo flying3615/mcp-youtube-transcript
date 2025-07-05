@@ -17,6 +17,9 @@ program
   .version("1.0.0");
 
 program
+  .command("transcript")
+  .description("Extract transcripts from a YouTube video using the transcript ID")
+
   .argument("<url>", "YouTube video URL or ID")
   .option(
     "-l, --lang <language>",
@@ -104,6 +107,50 @@ program
         console.error(
           `🎉 Successfully extracted transcript (${output.length} characters)`
         );
+      } catch (error) {
+        if (error instanceof YouTubeTranscriptError) {
+          console.error(`❌ Error: ${error.message}`);
+        } else {
+          console.error(`❌ Unexpected error: ${(error as Error).message}`);
+        }
+        process.exit(1);
+      }
+    }
+  );
+
+program
+  .command("download")
+  .description("Download YouTube video using the transcript ID")
+  .argument("<url>", "YouTube video URL or ID")
+  .option(
+    "-o, --output <file>",
+    "Output file path (required)",
+    "video.mp4"
+  )
+  .action(
+    async (
+      url: string,
+      options: {
+        output: string;
+      }
+    ) => {
+      try {
+        console.error(`🎬 Processing YouTube video download: ${url}`);
+
+        // Extract video ID
+        const videoId = YouTubeTranscriptFetcher.extractVideoId(url);
+        console.error(`📝 Video ID: ${videoId}`);
+
+        // Download the video
+        console.error(`⏬ Downloading video...`);
+        const outputPath = path.resolve(options.output);
+
+        await YouTubeTranscriptFetcher.download(videoId, {
+          output: outputPath,
+        });
+
+        console.error(`💾 Video saved to: ${outputPath}`);
+        console.error(`🎉 Successfully downloaded video`);
       } catch (error) {
         if (error instanceof YouTubeTranscriptError) {
           console.error(`❌ Error: ${error.message}`);
