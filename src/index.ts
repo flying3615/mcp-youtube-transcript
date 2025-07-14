@@ -3,7 +3,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { McpError } from "@modelcontextprotocol/sdk/types.js";
-import { YouTubeTranscriptFetcher, YouTubeUtils, YouTubeTranscriptError, TranscriptOptions, Transcript } from './youtube/index.js';
+import { YouTubeTranscriptFetcher, YouTubeUtils, YouTubeHelperError, TranscriptOptions, Transcript } from './youtube/index.js';
 import { z } from "zod";
 
 class YouTubeTranscriptExtractor {
@@ -21,14 +21,14 @@ class YouTubeTranscriptExtractor {
     try {
       const result = await YouTubeTranscriptFetcher.fetchTranscripts(videoID, { lang });
       if (result.transcripts.length === 0) {
-        throw new YouTubeTranscriptError('No transcripts found');
+        throw new YouTubeHelperError('No transcripts found');
       }
       return result;
     } catch (error) {
-      if (error instanceof YouTubeTranscriptError || error instanceof McpError) {
+      if (error instanceof YouTubeHelperError || error instanceof McpError) {
         throw error;
       }
-      throw new YouTubeTranscriptError(`Failed to fetch transcripts: ${(error as Error).message}`);
+      throw new YouTubeHelperError(`Failed to fetch transcripts: ${(error as Error).message}`);
     }
   }
 }
@@ -113,10 +113,48 @@ class TranscriptServer {
             }]
           };
         } catch (error) {
-          if (error instanceof YouTubeTranscriptError || error instanceof McpError) {
+          if (error instanceof YouTubeHelperError || error instanceof McpError) {
             throw error;
           }
-          throw new YouTubeTranscriptError(`Failed to process transcripts: ${(error as Error).message}`);
+          throw new YouTubeHelperError(`Failed to process transcripts: ${(error as Error).message}`);
+        }
+      }
+    );
+
+    this.server.tool(
+      "download_video",
+      `Download a YouTube video to a specified path.\n\n**Parameters:**\n- \`url\` (string, required): YouTube video URL or ID.\n- \`output\` (string, optional, default 'video.mp4'): The path to save the video file.`,
+      {
+        url: z.string().describe("YouTube video URL or ID"),
+        outputPath: z.string().default("./").describe("Output file path"),
+      },
+      async (input) => {
+        try {
+          const videoId = this.extractor.extractYoutubeId(input.url);
+          console.error(`Downloading video ${videoId} to ${input.outputPath}`);
+
+          await YouTubeTranscriptFetcher.download(videoId, {
+            output: input.outputPath,
+          });
+
+          return {
+            content: [
+              {
+                type: "text",
+                text: `Video successfully downloaded to ${input.outputPath}`,
+                metadata: {
+                  videoId,
+                  path: input.outputPath,
+                  timestamp: new Date().toISOString(),
+                },
+              },
+            ],
+          };
+        } catch (error) {
+          if (error instanceof YouTubeHelperError || error instanceof McpError) {
+            throw error;
+          }
+          throw new YouTubeHelperError(`Failed to download video: ${(error as Error).message}`);
         }
       }
     );

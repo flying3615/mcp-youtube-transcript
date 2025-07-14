@@ -189,6 +189,29 @@ Fetches transcripts from YouTube videos.
 }
 ```
 
+### download_video
+
+Downloads a video from YouTube.
+
+**Parameters:**
+- `url` (string, required): YouTube video URL or ID
+- `output` (string, optional): The path to save the video file (default: "video.mp4")
+
+**Response Format:**
+```json
+{
+  "content": [{
+    "type": "text",
+    "text": "Video successfully downloaded to video.mp4",
+    "metadata": {
+      "videoId": "video_id",
+      "path": "video.mp4",
+      "timestamp": "processing_time"
+    }
+  }]
+}
+```
+
 ## Development
 
 ### Project Structure

@@ -4,7 +4,7 @@ import { Command } from "commander";
 import {
   YouTubeTranscriptFetcher,
   YouTubeUtils,
-  YouTubeTranscriptError,
+  YouTubeHelperError,
 } from "./youtube/index.js";
 import fs from "fs";
 import path from "path";
@@ -17,6 +17,9 @@ program
   .version("1.0.0");
 
 program
+  .command("transcript")
+  .description("Extract transcripts from a YouTube video using the transcript ID")
+
   .argument("<url>", "YouTube video URL or ID")
   .option(
     "-l, --lang <language>",
@@ -53,7 +56,7 @@ program
           });
 
         if (transcripts.length === 0) {
-          throw new YouTubeTranscriptError(
+          throw new YouTubeHelperError(
             "No transcripts found for this video"
           );
         }
@@ -105,7 +108,51 @@ program
           `🎉 Successfully extracted transcript (${output.length} characters)`
         );
       } catch (error) {
-        if (error instanceof YouTubeTranscriptError) {
+        if (error instanceof YouTubeHelperError) {
+          console.error(`❌ Error: ${error.message}`);
+        } else {
+          console.error(`❌ Unexpected error: ${(error as Error).message}`);
+        }
+        process.exit(1);
+      }
+    }
+  );
+
+program
+  .command("download")
+  .description("Download YouTube video using the transcript ID")
+  .argument("<url>", "YouTube video URL or ID")
+  .option(
+    "-o, --output <file>",
+    "Output file path (required)",
+    "./"
+  )
+  .action(
+    async (
+      url: string,
+      options: {
+        output: string;
+      }
+    ) => {
+      try {
+        console.error(`🎬 Processing YouTube video download: ${url}`);
+
+        // Extract video ID
+        const videoId = YouTubeTranscriptFetcher.extractVideoId(url);
+        console.error(`📝 Video ID: ${videoId}`);
+
+        // Download the video
+        console.error(`⏬ Downloading video...`);
+        const outputPath = path.resolve(options.output);
+
+        await YouTubeTranscriptFetcher.download(videoId, {
+          output: outputPath,
+        });
+
+        console.error(`💾 Video saved to: ${outputPath}`);
+        console.error(`🎉 Successfully downloaded video`);
+      } catch (error) {
+        if (error instanceof YouTubeHelperError) {
           console.error(`❌ Error: ${error.message}`);
         } else {
           console.error(`❌ Unexpected error: ${(error as Error).message}`);

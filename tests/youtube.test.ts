@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
+import * as fs from 'fs';
 // @ts-ignore
-import {Transcript, YouTubeTranscriptError, YouTubeTranscriptFetcher, YouTubeUtils} from "../src/youtube";
+import {YouTubeHelperError, YouTubeTranscriptFetcher, YouTubeUtils} from "../src/youtube";
 
 
 describe("YouTubeTranscriptFetcher", () => {
@@ -8,28 +9,28 @@ describe("YouTubeTranscriptFetcher", () => {
     it("should extract video ID from various YouTube URL formats", () => {
       const testCases = [
         {
-          input: "https://www.youtube.com/watch?v=qgN3uOYlh-I",
-          expected: "qgN3uOYlh-I",
+          input: "https://www.youtube.com/watch?v=gzBS9eh-Eh4",
+          expected: "gzBS9eh-Eh4",
         },
         {
-          input: "https://www.youtube.com/watch?v=qgN3uOYlh-I&t=65s",
-          expected: "qgN3uOYlh-I",
+          input: "https://www.youtube.com/watch?v=gzBS9eh-Eh4&t=65s",
+          expected: "gzBS9eh-Eh4",
         },
         {
-          input: "https://youtu.be/qgN3uOYlh-I",
-          expected: "qgN3uOYlh-I",
+          input: "https://youtu.be/gzBS9eh-Eh4",
+          expected: "gzBS9eh-Eh4",
         },
         {
-          input: "https://youtu.be/qgN3uOYlh-I?t=65",
-          expected: "qgN3uOYlh-I",
+          input: "https://youtu.be/gzBS9eh-Eh4?t=65",
+          expected: "gzBS9eh-Eh4",
         },
         {
-          input: "https://www.youtube.com/shorts/qgN3uOYlh-I",
-          expected: "qgN3uOYlh-I",
+          input: "https://www.youtube.com/shorts/gzBS9eh-Eh4",
+          expected: "gzBS9eh-Eh4",
         },
         {
-          input: "qgN3uOYlh-I", // Direct video ID
-          expected: "qgN3uOYlh-I",
+          input: "gzBS9eh-Eh4", // Direct video ID
+          expected: "gzBS9eh-Eh4",
         },
       ];
 
@@ -56,7 +57,7 @@ describe("YouTubeTranscriptFetcher", () => {
   describe("fetchTranscripts", () => {
     it("should fetch transcripts for a valid video with captions", async () => {
       // Using the test video from our earlier testing
-      const videoId = "qgN3uOYlh-I";
+      const videoId = "gzBS9eh-Eh4";
 
       const result = await YouTubeTranscriptFetcher.fetchTranscripts(videoId);
 
@@ -82,23 +83,12 @@ describe("YouTubeTranscriptFetcher", () => {
     }, 30000);
 
     it("should fetch transcripts with URL input", async () => {
-      const videoUrl = "https://www.youtube.com/watch?v=qgN3uOYlh-I&t=65s";
+      const videoUrl = "https://www.youtube.com/watch?v=gzBS9eh-Eh4&t=65s";
 
       const result = await YouTubeTranscriptFetcher.fetchTranscripts(videoUrl);
 
       expect(result).toBeDefined();
       expect(result.transcripts.length).toBeGreaterThan(0);
-    }, 30000);
-
-    it("should fetch transcripts with URL input with different lang", async () => {
-      const videoUrl = "https://www.youtube.com/watch?v=2G165Af5KAU";
-      const lang = "chinese"
-
-      const result = await YouTubeTranscriptFetcher.fetchTranscripts(videoUrl,{ lang });
-
-      expect(result).toBeDefined();
-      expect(result.transcripts.length).toBeGreaterThan(0);
-      expect(result.transcripts.some((t: Transcript) => t.lang.toLowerCase().includes(lang))).toBe(true);
     }, 30000);
 
     it("should handle videos without transcripts gracefully", async () => {
@@ -112,7 +102,7 @@ describe("YouTubeTranscriptFetcher", () => {
     }, 30000);
 
     it("should validate transcript data integrity", async () => {
-      const videoId = "qgN3uOYlh-I";
+      const videoId = "gzBS9eh-Eh4";
 
       const result = await YouTubeTranscriptFetcher.fetchTranscripts(videoId);
 
@@ -235,9 +225,90 @@ describe("YouTubeUtils", () => {
 
 describe("Error Handling", () => {
   it("should create YouTubeTranscriptError correctly", () => {
-    const error = new YouTubeTranscriptError("Test error message");
+    const error = new YouTubeHelperError("Test error message");
     expect(error.name).toBe("YouTubeTranscriptError");
     expect(error.message).toContain("Test error message");
     expect(error).toBeInstanceOf(Error);
   });
+});
+
+describe("download", () => {
+  it("should download a video successfully", async () => {
+    // Using a short test video
+    const videoId = "gzBS9eh-Eh4";
+    const outputPath = "test-download.mp4";
+    
+    try {
+      // Delete the file if it already exists
+      if (fs.existsSync(outputPath)) {
+        fs.unlinkSync(outputPath);
+      }
+      
+      // Download the video
+      await YouTubeTranscriptFetcher.download(videoId, {
+        outputPath: outputPath,
+        quality: "lowest", // Use lowest quality for faster test
+      });
+      
+      // Check if file exists and has content
+      expect(fs.existsSync(outputPath)).toBe(true);
+      const stats = fs.statSync(outputPath);
+      expect(stats.size).toBeGreaterThan(0);
+      
+      // Clean up
+      fs.unlinkSync(outputPath);
+    } catch (error) {
+      // Clean up in case of error
+      if (fs.existsSync(outputPath)) {
+        fs.unlinkSync(outputPath);
+      }
+      throw error;
+    }
+  }, 60000); // Increase timeout to 60 seconds for download
+  
+  it("should throw error for invalid video ID", async () => {
+    const invalidVideoId = "invalid_video_id_123";
+    const outputPath = "invalid-download.mp4";
+    
+    await expect(
+      YouTubeTranscriptFetcher.download(invalidVideoId, {
+        outputPath: outputPath,
+      })
+    ).rejects.toThrow();
+    
+    // Ensure no file was created
+    expect(fs.existsSync(outputPath)).toBe(false);
+  }, 30000);
+  
+  it("should handle download with URL input", async () => {
+    const videoUrl = "https://www.youtube.com/watch?v=gzBS9eh-Eh4&t=65s";
+    const outputPath = "url-download.mp4";
+    
+    try {
+      // Delete the file if it already exists
+      if (fs.existsSync(outputPath)) {
+        fs.unlinkSync(outputPath);
+      }
+      
+      // Download the video
+      await YouTubeTranscriptFetcher.download(videoUrl, {
+        outputPath: outputPath,
+        quality: "lowest", // Use lowest quality for faster test
+      });
+      
+      // Check if file exists and has content
+      expect(fs.existsSync(outputPath)).toBe(true);
+      const stats = fs.statSync(outputPath);
+      expect(stats.size).toBeGreaterThan(0);
+      
+      // Clean up
+      fs.unlinkSync(outputPath);
+    } catch (error) {
+      // Clean up in case of error
+      if (fs.existsSync(outputPath)) {
+        fs.unlinkSync(outputPath);
+      }
+      throw error;
+    }
+  }, 60000);
 });

@@ -1,8 +1,8 @@
 import { McpError, ErrorCode } from "@modelcontextprotocol/sdk/types.js";
 
-export class YouTubeTranscriptError extends McpError {
+export class YouTubeHelperError extends McpError {
   constructor(message: string) {
     super(ErrorCode.InternalError, message);
-    this.name = "YouTubeTranscriptError";
+    this.name = "YouTubeHelperError";
   }
 }

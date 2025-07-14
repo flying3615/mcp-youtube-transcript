@@ -1,7 +1,10 @@
-import { McpError, ErrorCode } from "@modelcontextprotocol/sdk/types.js";
-import { Innertube } from "youtubei.js";
-import { Transcript } from "./types.js";
-import { YouTubeTranscriptError } from "./error.js";
+import {ErrorCode, McpError} from "@modelcontextprotocol/sdk/types.js";
+import {ClientType, Innertube, Log, Utils} from "youtubei.js";
+import {Transcript} from "./types.js";
+import {YouTubeHelperError} from "./error.js";
+import fs from "fs";
+
+Log.setLevel(Log.Level.INFO);
 
 export class YouTubeTranscriptFetcher {
   private static youtube: Innertube | null = null;
@@ -14,7 +17,7 @@ export class YouTubeTranscriptFetcher {
       try {
         this.youtube = await Innertube.create();
       } catch (error) {
-        throw new YouTubeTranscriptError(
+        throw new YouTubeHelperError(
           `Failed to initialize YouTube client: ${(error as Error).message}`
         );
       }
@@ -93,6 +96,56 @@ export class YouTubeTranscriptFetcher {
   }
 
   /**
+   * Download a YouTube video
+   */
+  static async download(
+      videoId: string,
+      options: {
+        output: string
+      }
+  ): Promise<void> {
+
+    try {
+      const identifier = this.extractVideoId(videoId);
+      const youtube = await this.initializeYouTube();
+
+      const info = await youtube.getInfo(identifier, ClientType.ANDROID);
+      const title = info.basic_info?.title || "Untitled Video";
+
+      const stream = await info.download({
+        quality: 'best',
+        client: ClientType.ANDROID
+      });
+
+      // 生成保存路径
+      const safeTitle = title.replace(/[\\/:*?"<>|]/g, "_");
+      let outputPath: string;
+      if (options.output) {
+        // 如果 output 是目录，则拼接 title.mp4，否则直接用 output
+        const stat = fs.existsSync(options.output) ? fs.statSync(options.output) : null;
+        if (stat && stat.isDirectory()) {
+          outputPath = `${options.output.replace(/\/$/, "")}/${safeTitle}.mp4`;
+        } else {
+          outputPath = options.output;
+        }
+      } else {
+        outputPath = `./${safeTitle}.mp4`;
+      }
+
+      const file = fs.createWriteStream(outputPath);
+      for await (const chunk of Utils.streamToIterable(stream)) {
+        file.write(chunk);
+      }
+      file.end();
+
+    } catch (error) {
+      throw new YouTubeHelperError(
+          `Failed to download video: ${(error as Error).message}`
+      );
+    }
+  }
+
+  /**
    * Fetch transcripts and video information using YouTube.js
    */
   static async fetchTranscripts(
@@ -108,7 +161,7 @@ export class YouTubeTranscriptFetcher {
 
       const transcriptInfo = await info.getTranscript();
       if (!transcriptInfo) {
-        throw new YouTubeTranscriptError(
+        throw new YouTubeHelperError(
           `No transcripts available for video ${identifier}`
         );
       }
@@ -133,7 +186,7 @@ export class YouTubeTranscriptFetcher {
             );
           }
         } else {
-          throw new YouTubeTranscriptError(
+          throw new YouTubeHelperError(
             `Language ${
               config.lang
             } not available for video ${identifier}. Available languages: ${transcriptInfo.languages.join(
@@ -145,7 +198,7 @@ export class YouTubeTranscriptFetcher {
 
       const segments = this._findTranscriptSegments(finalTranscriptInfo);
       if (!segments || segments.length === 0) {
-        throw new YouTubeTranscriptError(
+        throw new YouTubeHelperError(
           `Unable to parse transcript structure for video ${identifier}. The transcript data format may have changed.`
         );
       }
@@ -174,7 +227,7 @@ export class YouTubeTranscriptFetcher {
         .filter((t): t is Transcript => t !== null);
 
       if (transcripts.length === 0) {
-        throw new YouTubeTranscriptError(
+        throw new YouTubeHelperError(
           `No transcript segments found for video ${identifier}. The video may not have captions or they may be disabled.`
         );
       }
@@ -184,7 +237,7 @@ export class YouTubeTranscriptFetcher {
 
       return { transcripts, title };
     } catch (error) {
-      throw new YouTubeTranscriptError(
+      throw new YouTubeHelperError(
         `Failed to fetch transcripts: ${(error as Error).message}`
       );
     }
