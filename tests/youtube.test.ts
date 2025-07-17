@@ -119,6 +119,29 @@ describe("YouTubeTranscriptFetcher", () => {
         expect(transcript.timestamp).toBeGreaterThanOrEqual(0);
       });
     }, 30000);
+
+    it("should fetch Chinese transcripts for a valid video with zh captions", async () => {
+      const videoId = "mzxa4I_4xUw";
+      const result = await YouTubeTranscriptFetcher.fetchTranscripts(videoId, { lang: "Chinese" });
+
+      expect(result).toBeDefined();
+      expect(result.title).toBeDefined();
+      expect(result.transcripts).toBeDefined();
+      expect(Array.isArray(result.transcripts)).toBe(true);
+      expect(result.transcripts.length).toBeGreaterThan(0);
+
+      // Check that at least one transcript is in Chinese
+      const hasChinese = result.transcripts.some((t: any) => /[\u4e00-\u9fff]/.test(t.text));
+      expect(hasChinese).toBe(true);
+
+      // Check transcript structure
+      const firstTranscript = result.transcripts[0];
+      expect(firstTranscript).toHaveProperty("text");
+      expect(firstTranscript).toHaveProperty("timestamp");
+      expect(firstTranscript).toHaveProperty("duration");
+      expect(firstTranscript).toHaveProperty("lang");
+      expect(firstTranscript.lang).toBe("Chinese (Simplified)");
+    }, 30000);
   });
 });
 

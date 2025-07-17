@@ -81,7 +81,7 @@ class TranscriptServer {
           }
 
           if(!languageMap[input.lang]) {
-            throw new YouTubeTranscriptError(`Unsupported language code: ${input.lang}. Supported codes are: ${Object.keys(languageMap).join(", ")}`);
+            throw new YouTubeHelperError(`Unsupported language code: ${input.lang}. Supported codes are: ${Object.keys(languageMap).join(", ")}`);
           }
           
           const { transcripts, title } = await this.extractor.getTranscripts({ 
@@ -113,9 +113,6 @@ class TranscriptServer {
             }]
           };
         } catch (error) {
-          if (error instanceof YouTubeHelperError || error instanceof McpError) {
-            throw error;
-          }
           throw new YouTubeHelperError(`Failed to process transcripts: ${(error as Error).message}`);
         }
       }
@@ -151,9 +148,6 @@ class TranscriptServer {
             ],
           };
         } catch (error) {
-          if (error instanceof YouTubeHelperError || error instanceof McpError) {
-            throw error;
-          }
           throw new YouTubeHelperError(`Failed to download video: ${(error as Error).message}`);
         }
       }
